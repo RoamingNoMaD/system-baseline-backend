@@ -23,7 +23,7 @@ class ApiTest(unittest.TestCase):
         self.addCleanup(self.stopPatches)
         test_connexion_app = app.create_app()
         test_flask_app = test_connexion_app.app
-        self.client = test_flask_app.test_client()
+        self.client = test_connexion_app.test_client()
 
     def stopPatches(self):
         self.rbac_patcher.stop()
@@ -35,7 +35,7 @@ class EmptyApiTests(ApiTest):
         mock_fetch_systems.return_value = [fixtures.SYSTEM_WITH_PROFILE]
         response = self.client.get("api/system-baseline/v1/baselines", headers=fixtures.AUTH_HEADER)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(json.loads(response.data)["meta"]["count"], 0)
+        self.assertEqual(json.loads(response.content)["meta"]["count"], 0)
 
 
 class BadUUIDTests(ApiTest):
@@ -46,7 +46,7 @@ class BadUUIDTests(ApiTest):
         )
         self.assertEqual(response.status_code, 400)
         self.assertEqual(
-            json.loads(response.data)["message"],
+            json.loads(response.content)["message"],
             "malformed UUIDs requested (MALFORMED-UUID)",
         )
 
@@ -79,7 +79,7 @@ class InvalidFactsTests(ApiTest):
         self.assertEqual(response.status_code, 400)
         self.assertIn(
             "is over 500 characters",
-            response.data.decode("utf-8"),
+            response.content.decode("utf-8"),
         )
 
         response = self.client.post(
@@ -90,7 +90,7 @@ class InvalidFactsTests(ApiTest):
         self.assertEqual(response.status_code, 400)
         self.assertIn(
             "is over 1000 characters",
-            response.data.decode("utf-8"),
+            response.content.decode("utf-8"),
         )
 
 
@@ -108,7 +108,7 @@ class ApiSortTests(ApiTest):
         super(ApiSortTests, self).tearDown()
         mock_fetch_systems.return_value = [fixtures.SYSTEM_WITH_PROFILE]
         response = self.client.get("api/system-baseline/v1/baselines", headers=fixtures.AUTH_HEADER)
-        data = json.loads(response.data)["data"]
+        data = json.loads(response.content)["data"]
         for baseline in data:
             response = self.client.delete(
                 "api/system-baseline/v1/baselines/%s" % baseline["id"],
@@ -121,13 +121,13 @@ class ApiSortTests(ApiTest):
         mock_fetch_systems.return_value = [fixtures.SYSTEM_WITH_PROFILE]
         response = self.client.get("api/system-baseline/v1/baselines", headers=fixtures.AUTH_HEADER)
         self.assertEqual(response.status_code, 200)
-        result = json.loads(response.data)
+        result = json.loads(response.content)
         self.assertEqual(result["meta"]["count"], 1)
         response = self.client.get(
             "api/system-baseline/v1/baselines/%s" % result["data"][0]["id"],
             headers=fixtures.AUTH_HEADER,
         )
-        result = json.loads(response.data)
+        result = json.loads(response.content)
         # confirm that we get sorted names back, including nested names
         self.assertEqual(
             result["data"][0]["baseline_facts"],
@@ -164,7 +164,7 @@ class ApiGeneralTests(ApiTest):
     def tearDown(self):
         super(ApiGeneralTests, self).tearDown()
         response = self.client.get("api/system-baseline/v1/baselines", headers=fixtures.AUTH_HEADER)
-        data = json.loads(response.data)["data"]
+        data = json.loads(response.content)["data"]
         for baseline in data:
             response = self.client.delete(
                 "api/system-baseline/v1/baselines/%s" % baseline["id"],
@@ -183,7 +183,7 @@ class ApiGeneralTests(ApiTest):
         self.assertEqual(response.status_code, 400)
         self.assertIn(
             "fact arch cannot have value and values defined",
-            response.data.decode("utf-8"),
+            response.content.decode("utf-8"),
         )
 
     @mock.patch("system_baseline.views.v1.fetch_systems_with_profiles")
@@ -191,7 +191,7 @@ class ApiGeneralTests(ApiTest):
         mock_fetch_systems.return_value = [fixtures.SYSTEM_WITH_PROFILE]
         response = self.client.get("api/system-baseline/v1/baselines", headers=fixtures.AUTH_HEADER)
         self.assertEqual(response.status_code, 200)
-        result = json.loads(response.data)
+        result = json.loads(response.content)
         self.assertEqual(result["meta"]["count"], 2)
         self.assertEqual(result["meta"]["total_available"], 2)
 
@@ -200,16 +200,16 @@ class ApiGeneralTests(ApiTest):
         mock_fetch_systems.return_value = [fixtures.SYSTEM_WITH_PROFILE]
         response = self.client.get("api/system-baseline/v1/baselines", headers=fixtures.AUTH_HEADER)
         self.assertEqual(response.status_code, 200)
-        result = json.loads(response.data)
+        result = json.loads(response.content)
         existing_id = result["data"][0]["id"]
         missing_id = str(uuid.uuid4())
         response = self.client.get(
             f"api/system-baseline/v1/baselines/{existing_id},{missing_id}",
             headers=fixtures.AUTH_HEADER,
         )
-        result = json.loads(response.data)
+        result = json.loads(response.content)
         self.assertEqual(response.status_code, 404)
-        message = json.loads(response.data)["message"]
+        message = json.loads(response.content)["message"]
         self.assertEqual(f"ids [{missing_id}] not available to display", message)
 
     @mock.patch("system_baseline.views.v1.fetch_systems_with_profiles")
@@ -220,13 +220,13 @@ class ApiGeneralTests(ApiTest):
             headers=fixtures.AUTH_HEADER,
         )
         self.assertEqual(response.status_code, 200)
-        asc_result = json.loads(response.data)
+        asc_result = json.loads(response.content)
         response = self.client.get(
             "api/system-baseline/v1/baselines?order_by=display_name&order_how=DESC",
             headers=fixtures.AUTH_HEADER,
         )
         self.assertEqual(response.status_code, 200)
-        desc_result = json.loads(response.data)
+        desc_result = json.loads(response.content)
         # check that the ascending result is the inverse of the descending result
         self.assertEqual(desc_result["data"][::-1], asc_result["data"])
 
@@ -235,7 +235,7 @@ class ApiGeneralTests(ApiTest):
         mock_fetch_systems.return_value = [fixtures.SYSTEM_WITH_PROFILE]
         response = self.client.get("api/system-baseline/v1/baselines", headers=fixtures.AUTH_HEADER)
         self.assertEqual(response.status_code, 200)
-        result = json.loads(response.data)
+        result = json.loads(response.content)
         ids_to_delete = [b["id"] for b in result["data"]]
         response = self.client.post(
             "api/system-baseline/v1/baselines/deletion_request",
@@ -250,7 +250,7 @@ class ApiGeneralTests(ApiTest):
         mock_fetch_systems.return_value = [fixtures.SYSTEM_WITH_PROFILE]
         response = self.client.get("api/system-baseline/v1/baselines", headers=fixtures.AUTH_HEADER)
         self.assertEqual(response.status_code, 200)
-        uuid_to_modify = json.loads(response.data)["data"][0]["id"]
+        uuid_to_modify = json.loads(response.content)["data"][0]["id"]
         response = self.client.patch(
             "api/system-baseline/v1/baselines/%s" % uuid_to_modify,
             headers=fixtures.AUTH_HEADER,
@@ -263,7 +263,7 @@ class ApiGeneralTests(ApiTest):
             headers=fixtures.AUTH_HEADER,
         )
         self.assertEqual(response.status_code, 200)
-        asc_result = json.loads(response.data)
+        asc_result = json.loads(response.content)
         self.assertEqual(asc_result["data"][1]["id"], uuid_to_modify)
 
         response = self.client.get(
@@ -271,7 +271,7 @@ class ApiGeneralTests(ApiTest):
             headers=fixtures.AUTH_HEADER,
         )
         self.assertEqual(response.status_code, 200)
-        desc_result = json.loads(response.data)
+        desc_result = json.loads(response.content)
         # check that the ascending result is the inverse of the descending result
         self.assertEqual(desc_result["data"][::-1], asc_result["data"])
 
@@ -283,7 +283,7 @@ class ApiGeneralTests(ApiTest):
             headers=fixtures.AUTH_HEADER,
         )
         self.assertEqual(response.status_code, 200)
-        result = json.loads(response.data)
+        result = json.loads(response.content)
         uuid = result["data"][0]["id"]
         response = self.client.get(
             "api/system-baseline/v1/baselines/%s,%s" % (uuid, uuid),
@@ -299,7 +299,7 @@ class ApiGeneralTests(ApiTest):
             headers=fixtures.AUTH_HEADER,
         )
         self.assertEqual(response.status_code, 200)
-        result = json.loads(response.data)
+        result = json.loads(response.content)
         self.assertEqual(result["meta"]["count"], 1)
         self.assertEqual(result["meta"]["total_available"], 2)
         self.assertEqual(result["data"][0]["display_name"], "arch baseline")
@@ -309,7 +309,7 @@ class ApiGeneralTests(ApiTest):
             headers=fixtures.AUTH_HEADER,
         )
         self.assertEqual(response.status_code, 200)
-        result = json.loads(response.data)
+        result = json.loads(response.content)
         self.assertEqual(result["meta"]["count"], 2)
 
         response = self.client.get(
@@ -317,7 +317,7 @@ class ApiGeneralTests(ApiTest):
             headers=fixtures.AUTH_HEADER,
         )
         self.assertEqual(response.status_code, 200)
-        result = json.loads(response.data)
+        result = json.loads(response.content)
         self.assertEqual(result["meta"]["count"], 0)
 
         response = self.client.post(
@@ -332,7 +332,7 @@ class ApiGeneralTests(ApiTest):
             headers=fixtures.AUTH_HEADER,
         )
         self.assertEqual(response.status_code, 200)
-        result = json.loads(response.data)
+        result = json.loads(response.content)
         self.assertEqual(result["meta"]["count"], 1)
 
 
@@ -353,7 +353,7 @@ class CopyBaselineTests(ApiTest):
     def tearDown(self):
         super(CopyBaselineTests, self).tearDown()
         response = self.client.get("api/system-baseline/v1/baselines", headers=fixtures.AUTH_HEADER)
-        data = json.loads(response.data)["data"]
+        data = json.loads(response.content)["data"]
         for baseline in data:
             response = self.client.delete(
                 "api/system-baseline/v1/baselines/%s" % baseline["id"],
@@ -366,7 +366,7 @@ class CopyBaselineTests(ApiTest):
         mock_fetch_systems.return_value = [fixtures.SYSTEM_WITH_PROFILE]
         response = self.client.get("api/system-baseline/v1/baselines", headers=fixtures.AUTH_HEADER)
         self.assertEqual(response.status_code, 200)
-        result = json.loads(response.data)
+        result = json.loads(response.content)
         source_uuid = result["data"][0]["id"]
 
         response = self.client.post(
@@ -380,7 +380,7 @@ class CopyBaselineTests(ApiTest):
             headers=fixtures.AUTH_HEADER,
         )
         self.assertEqual(response.status_code, 200)
-        copied_baseline = json.loads(response.data)
+        copied_baseline = json.loads(response.content)
 
         response = self.client.post(
             "api/system-baseline/v1/baselines/%s?display_name=copy" % source_uuid,
@@ -392,11 +392,11 @@ class CopyBaselineTests(ApiTest):
             "api/system-baseline/v1/baselines/%s" % source_uuid,
             headers=fixtures.AUTH_HEADER,
         )
-        original_baseline = json.loads(response.data)
+        original_baseline = json.loads(response.content)
 
         response = self.client.get("api/system-baseline/v1/baselines", headers=fixtures.AUTH_HEADER)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(json.loads(response.data)["meta"]["count"], 3)
+        self.assertEqual(json.loads(response.content)["meta"]["count"], 3)
 
         old_date = datetime.datetime.strptime(
             original_baseline["data"][0]["created"], "%Y-%m-%dT%H:%M:%S.%fZ"
@@ -417,7 +417,7 @@ class ApiPatchTests(ApiTest):
     def tearDown(self):
         super(ApiPatchTests, self).tearDown()
         response = self.client.get("api/system-baseline/v1/baselines", headers=fixtures.AUTH_HEADER)
-        data = json.loads(response.data)["data"]
+        data = json.loads(response.content)["data"]
         for baseline in data:
             response = self.client.delete(
                 "api/system-baseline/v1/baselines/%s" % baseline["id"],
@@ -431,7 +431,7 @@ class ApiPatchTests(ApiTest):
         mock_fetch_systems.return_value = [fixtures.SYSTEM_WITH_PROFILE]
         response = self.client.get("api/system-baseline/v1/baselines", headers=fixtures.AUTH_HEADER)
         self.assertEqual(response.status_code, 200)
-        result = json.loads(response.data)
+        result = json.loads(response.content)
         patched_uuid = result["data"][0]["id"]
 
         # apply patch to data
@@ -447,7 +447,7 @@ class ApiPatchTests(ApiTest):
             "api/system-baseline/v1/baselines/%s" % patched_uuid,
             headers=fixtures.AUTH_HEADER,
         )
-        result = json.loads(response.data)
+        result = json.loads(response.content)
         for fact in result["data"][0]["baseline_facts"]:
             self.assertTrue(fact["name"] in ("nested", "nested fact 2"))
 
@@ -471,7 +471,7 @@ class ApiPatchTests(ApiTest):
             headers=fixtures.AUTH_HEADER,
             json=fixtures.BASELINE_PATCH_EMPTY_NAME,
         )
-        self.assertIn("fact name cannot be empty", response.data.decode("utf-8"))
+        self.assertIn("fact name cannot be empty", response.content.decode("utf-8"))
         self.assertEqual(response.status_code, 400)
 
         # attempt to use an empty fact value
@@ -482,7 +482,7 @@ class ApiPatchTests(ApiTest):
         )
         self.assertIn(
             "value for cpu_sockets_renamed cannot be empty",
-            response.data.decode("utf-8"),
+            response.content.decode("utf-8"),
         )
         # attempt to rename the baseline to a bad name
         response = self.client.patch(
@@ -500,7 +500,7 @@ class ApiPatchTests(ApiTest):
         )
         self.assertEqual(response.status_code, 400)
         self.assertIn(
-            "Fact name cannot have leading or trailing whitespace.", response.data.decode("utf-8")
+            "Fact name cannot have leading or trailing whitespace.", response.content.decode("utf-8")
         )
 
         # attempt to add a fact with trailing whitespace
@@ -511,7 +511,7 @@ class ApiPatchTests(ApiTest):
         )
         self.assertEqual(response.status_code, 400)
         self.assertIn(
-            "Fact name cannot have leading or trailing whitespace.", response.data.decode("utf-8")
+            "Fact name cannot have leading or trailing whitespace.", response.content.decode("utf-8")
         )
 
         # attempt to add a value with leading whitespace
@@ -523,7 +523,7 @@ class ApiPatchTests(ApiTest):
         self.assertEqual(response.status_code, 400)
         self.assertIn(
             "Value for cpu_sockets_renamed cannot have leading or trailing whitespace.",
-            response.data.decode("utf-8"),
+            response.content.decode("utf-8"),
         )
 
         # attempt to add a value with trailing whitespace
@@ -535,14 +535,14 @@ class ApiPatchTests(ApiTest):
         self.assertEqual(response.status_code, 400)
         self.assertIn(
             "Value for cpu_sockets_renamed cannot have leading or trailing whitespace.",
-            response.data.decode("utf-8"),
+            response.content.decode("utf-8"),
         )
 
 
 class CreateFromInventoryTests(ApiTest):
     def tearDown(self):
         response = self.client.get("api/system-baseline/v1/baselines", headers=fixtures.AUTH_HEADER)
-        data = json.loads(response.data)["data"]
+        data = json.loads(response.content)["data"]
         for baseline in data:
             response = self.client.delete(
                 "api/system-baseline/v1/baselines/%s" % baseline["id"],
@@ -579,7 +579,7 @@ class CreateFromInventoryTests(ApiTest):
         self.assertEqual(response.status_code, 404)
         self.assertIn(
             "inventory UUID df925152-c45d-11e9-a1f0-c85b761454fa not available",
-            response.data.decode("utf-8"),
+            response.content.decode("utf-8"),
         )
 
     def test_create_from_inventory_bad_uuid(self):
@@ -589,13 +589,13 @@ class CreateFromInventoryTests(ApiTest):
             json=fixtures.CREATE_FROM_INVENTORY_MALFORMED_UUID,
         )
         self.assertEqual(response.status_code, 400)
-        self.assertIn("malformed UUIDs requested", response.data.decode("utf-8"))
+        self.assertIn("malformed UUIDs requested", response.content.decode("utf-8"))
 
 
 class ApiDuplicateTests(ApiTest):
     def tearDown(self):
         response = self.client.get("api/system-baseline/v1/baselines", headers=fixtures.AUTH_HEADER)
-        data = json.loads(response.data)["data"]
+        data = json.loads(response.content)["data"]
         for baseline in data:
             response = self.client.delete(
                 "api/system-baseline/v1/baselines/%s" % baseline["id"],
@@ -612,7 +612,7 @@ class ApiDuplicateTests(ApiTest):
         )
         self.assertIn(
             "A fact with this name already exists.",
-            response.data.decode("utf-8"),
+            response.content.decode("utf-8"),
         )
 
         response = self.client.post(
@@ -620,7 +620,7 @@ class ApiDuplicateTests(ApiTest):
             headers=fixtures.AUTH_HEADER,
             json=fixtures.BASELINE_DUPLICATES_TWO_LOAD,
         )
-        self.assertIn("A fact with this name already exists.", response.data.decode("utf-8"))
+        self.assertIn("A fact with this name already exists.", response.content.decode("utf-8"))
 
         # test that a category and fact can have the same name
         response = self.client.post(
@@ -639,7 +639,7 @@ class ApiDuplicateTests(ApiTest):
         self.assertEqual(response.status_code, 400)
         self.assertIn(
             "Baseline name cannot have leading or trailing whitespace.",
-            response.data.decode("utf-8"),
+            response.content.decode("utf-8"),
         )
 
         response = self.client.post(
@@ -650,7 +650,7 @@ class ApiDuplicateTests(ApiTest):
         self.assertEqual(response.status_code, 400)
         self.assertIn(
             "Baseline name cannot have leading or trailing whitespace.",
-            response.data.decode("utf-8"),
+            response.content.decode("utf-8"),
         )
 
 
@@ -667,7 +667,7 @@ class ApiPaginationTests(ApiTest):
     def tearDown(self):
         super(ApiPaginationTests, self).tearDown()
         response = self.client.get("api/system-baseline/v1/baselines", headers=fixtures.AUTH_HEADER)
-        data = json.loads(response.data)["data"]
+        data = json.loads(response.content)["data"]
         for baseline in data:
             response = self.client.delete(
                 "api/system-baseline/v1/baselines/%s" % baseline["id"],
@@ -684,7 +684,7 @@ class ApiPaginationTests(ApiTest):
             headers=fixtures.AUTH_HEADER,
         )
         self.assertEqual(response.status_code, 200)
-        links = json.loads(response.data)["links"]
+        links = json.loads(response.content)["links"]
         for link_name in ("first", "next", "previous", "last"):
             self.assertIn(link_name, links)
             split_parts = urlsplit(links[link_name])
@@ -740,7 +740,7 @@ class ApiSystemsAssociationTests(ApiTest):
 
         response = self.client.get("api/system-baseline/v1/baselines", headers=fixtures.AUTH_HEADER)
         self.assertEqual(response.status_code, 200)
-        result = json.loads(response.data)
+        result = json.loads(response.content)
         self.baseline_id = [b["id"] for b in result["data"]][0]
 
         response = self.client.post(
@@ -757,7 +757,7 @@ class ApiSystemsAssociationTests(ApiTest):
         # get all baselines
         mock_fetch_systems.return_value = [fixtures.SYSTEM_WITH_PROFILE]
         response = self.client.get("api/system-baseline/v1/baselines", headers=fixtures.AUTH_HEADER)
-        baselines = json.loads(response.data)["data"]
+        baselines = json.loads(response.content)["data"]
 
         for baseline in baselines:
             # get systems for baseline
@@ -767,7 +767,7 @@ class ApiSystemsAssociationTests(ApiTest):
             )
             self.assertEqual(response.status_code, 200)
 
-            system_ids = json.loads(response.data)
+            system_ids = json.loads(response.content)
 
             # delete systems
             response = self.client.post(
@@ -791,7 +791,7 @@ class ApiSystemsAssociationTests(ApiTest):
         )
         self.assertEqual(response.status_code, 200)
 
-        response_system_ids = json.loads(response.data)["system_ids"]
+        response_system_ids = json.loads(response.content)["system_ids"]
         self.assertEqual(len(response_system_ids), 5)
 
         for system_id in self.system_ids:
@@ -806,7 +806,7 @@ class ApiSystemsAssociationTests(ApiTest):
         )
         self.assertEqual(response.status_code, 200)
 
-        response_system_ids = json.loads(response.data)["system_ids"]
+        response_system_ids = json.loads(response.content)["system_ids"]
         self.assertEqual(len(response_system_ids), 4)
 
     def test_list_systems_with_baseline_and_inventory_group_names_filter(self):
@@ -818,7 +818,7 @@ class ApiSystemsAssociationTests(ApiTest):
         )
         self.assertEqual(response.status_code, 200)
 
-        response_system_ids = json.loads(response.data)["system_ids"]
+        response_system_ids = json.loads(response.content)["system_ids"]
         self.assertEqual(len(response_system_ids), 4)
 
     def test_list_systems_with_baseline_and_inventory_group_ids_and_names_filter(self):
@@ -831,7 +831,7 @@ class ApiSystemsAssociationTests(ApiTest):
         )
         self.assertEqual(response.status_code, 200)
 
-        response_system_ids = json.loads(response.data)["system_ids"]
+        response_system_ids = json.loads(response.content)["system_ids"]
         self.assertEqual(len(response_system_ids), 4)
 
     def test_list_systems_with_baseline_and_inventory_group_filter_non_grouped(self):
@@ -843,7 +843,7 @@ class ApiSystemsAssociationTests(ApiTest):
         )
         self.assertEqual(response.status_code, 200)
 
-        response_system_ids = json.loads(response.data)["system_ids"]
+        response_system_ids = json.loads(response.content)["system_ids"]
         self.assertEqual(len(response_system_ids), 3)
 
     def test_delete_systems_with_baseline(self):
@@ -871,7 +871,7 @@ class ApiSystemsAssociationTests(ApiTest):
         )
         self.assertEqual(response.status_code, 200)
 
-        response_system_ids = json.loads(response.data)
+        response_system_ids = json.loads(response.content)
         self.assertEqual(len(response_system_ids), 1)
 
     def test_delete_systems_with_baseline_deletion_request(self):
@@ -896,7 +896,7 @@ class ApiSystemsAssociationTests(ApiTest):
         )
         self.assertEqual(response.status_code, 200)
 
-        response_system_ids = json.loads(response.data)
+        response_system_ids = json.loads(response.content)
         self.assertEqual(len(response_system_ids), 1)
 
     def test_delete_nonexistent_system(self):
@@ -920,7 +920,7 @@ class ApiSystemsAssociationTests(ApiTest):
         )
         self.assertEqual(response.status_code, 200)
 
-        response_system_ids = json.loads(response.data)["system_ids"]
+        response_system_ids = json.loads(response.content)["system_ids"]
         self.assertEqual(len(response_system_ids), 5)
 
     @mock.patch("system_baseline.views.v1.fetch_systems_with_profiles")
@@ -936,7 +936,7 @@ class ApiSystemsAssociationTests(ApiTest):
         ]
         response = self.client.get("api/system-baseline/v1/baselines", headers=fixtures.AUTH_HEADER)
         self.assertEqual(response.status_code, 200)
-        result = json.loads(response.data)
+        result = json.loads(response.content)
         baseline_id = [b["id"] for b in result["data"]][0]
 
         response = self.client.post(
@@ -946,7 +946,7 @@ class ApiSystemsAssociationTests(ApiTest):
         )
         self.assertEqual(response.status_code, 200)
 
-        response_system_ids = json.loads(response.data)["system_ids"]
+        response_system_ids = json.loads(response.content)["system_ids"]
         self.assertEqual(len(response_system_ids), 7)
 
         for system_id in system_ids:
@@ -957,7 +957,7 @@ class ApiSystemsAssociationTests(ApiTest):
         mock_fetch_systems.return_value = [fixtures.SYSTEM_WITH_PROFILE]
         response = self.client.get("api/system-baseline/v1/baselines", headers=fixtures.AUTH_HEADER)
         self.assertEqual(response.status_code, 200)
-        result = json.loads(response.data)
+        result = json.loads(response.content)
         self.assertEqual(result["data"][0]["mapped_system_count"], 5)
 
     @mock.patch("system_baseline.views.v1.fetch_systems_with_profiles")
@@ -965,7 +965,7 @@ class ApiSystemsAssociationTests(ApiTest):
         mock_fetch_systems.return_value = [fixtures.SYSTEM_WITH_PROFILE]
         response = self.client.get("api/system-baseline/v1/baselines", headers=fixtures.AUTH_HEADER)
         self.assertEqual(response.status_code, 200)
-        result = json.loads(response.data)
+        result = json.loads(response.content)
         baseline_uuid = result["data"][0]["id"]  # get one existing baseline for the actual test
 
         response = self.client.get(
@@ -973,5 +973,5 @@ class ApiSystemsAssociationTests(ApiTest):
             headers=fixtures.AUTH_HEADER,
         )
         self.assertEqual(response.status_code, 200)
-        result = json.loads(response.data)
+        result = json.loads(response.content)
         self.assertEqual(result["data"][0]["mapped_system_count"], 5)

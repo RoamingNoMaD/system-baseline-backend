@@ -17,8 +17,7 @@ class GlobalHelpersApiTest(unittest.TestCase):
         patched_rbac.return_value = None  # validate all RBAC requests
         self.addCleanup(self.stopPatches)
         test_connexion_app = app.create_app()
-        test_flask_app = test_connexion_app.app
-        self.client = test_flask_app.test_client()
+        self.client = test_connexion_app.test_client()
 
     def stopPatches(self):
         self.rbac_patcher.stop()

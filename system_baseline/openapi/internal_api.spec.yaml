@@ -12,38 +12,6 @@ servers:
   - url: "{{ path_prefix }}{{ app_name }}/internal/v1"
 
 paths:
-  /version:
-    get:
-      summary: get the service version
-      description: "get the service version"
-      operationId: system_baseline.internal_views.v1.get_version
-      responses:
-        '200':
-          description: a service version
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Version'
-  /baselines:
-    get:
-      summary: fetch list of Baseline IDs
-      description: "Fetch the list of Baseline IDs"
-      operationId: system_baseline.internal_views.v1.get_baselines_by_system_id
-      parameters:
-        - $ref: '#/components/parameters/SystemIdParam'
-      responses:
-        '200':
-          description: a paginated list of baselines
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BaselineIdsList'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
   /systems/{system_id}:
     parameters:
       - $ref: '#/components/parameters/SystemId'
@@ -114,6 +82,38 @@ paths:
             application/json:
               schema:
                 type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /version:
+    get:
+      summary: get the service version
+      description: "get the service version"
+      operationId: system_baseline.internal_views.v1.get_version
+      responses:
+        '200':
+          description: a service version
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Version'
+  /baselines:
+    get:
+      summary: fetch list of Baseline IDs
+      description: "Fetch the list of Baseline IDs"
+      operationId: system_baseline.internal_views.v1.get_baselines_by_system_id
+      parameters:
+        - $ref: '#/components/parameters/SystemIdParam'
+      responses:
+        '200':
+          description: a paginated list of baselines
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaselineIdsList'
         '400':
           $ref: '#/components/responses/BadRequest'
         '403':

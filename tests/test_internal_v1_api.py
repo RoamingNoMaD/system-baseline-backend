@@ -20,7 +20,7 @@ class ApiTest(unittest.TestCase):
         self.addCleanup(self.stopPatches)
         test_connexion_app = app.create_app()
         test_flask_app = test_connexion_app.app
-        self.client = test_flask_app.test_client()
+        self.client = test_connexion_app.test_client()
 
     def stopPatches(self):
         self.rbac_patcher.stop()
@@ -49,7 +49,7 @@ class ApiSystemsAssociationTests(ApiTest):
 
         response = self.client.get("api/system-baseline/v1/baselines", headers=fixtures.AUTH_HEADER)
         self.assertEqual(response.status_code, 200)
-        result = json.loads(response.data)
+        result = json.loads(response.content)
         self.baseline_id = [b["id"] for b in result["data"]][0]
 
         response = self.client.post(
@@ -67,7 +67,7 @@ class ApiSystemsAssociationTests(ApiTest):
         ]
         # get all baselines
         response = self.client.get("api/system-baseline/v1/baselines", headers=fixtures.AUTH_HEADER)
-        baselines = json.loads(response.data)["data"]
+        baselines = json.loads(response.content)["data"]
 
         for baseline in baselines:
             # get systems for baseline
@@ -77,7 +77,7 @@ class ApiSystemsAssociationTests(ApiTest):
             )
             self.assertEqual(response.status_code, 200)
 
-            system_ids = json.loads(response.data)["system_ids"]
+            system_ids = json.loads(response.content)["system_ids"]
 
             # delete systems
             response = self.client.post(
@@ -101,7 +101,7 @@ class ApiSystemsAssociationTests(ApiTest):
         )
         self.assertEqual(response.status_code, 200)
 
-        response_system_ids = json.loads(response.data)["system_ids"]
+        response_system_ids = json.loads(response.content)["system_ids"]
         self.assertEqual(len(response_system_ids), 3)
 
         for system_id in self.system_ids:
@@ -129,7 +129,7 @@ class ApiSystemsAssociationTests(ApiTest):
         )
         self.assertEqual(response.status_code, 200)
 
-        response_system_ids = json.loads(response.data)
+        response_system_ids = json.loads(response.content)
         self.assertEqual(len(response_system_ids), 1)
 
     def test_delete_nonexistent_system(self):
@@ -153,7 +153,7 @@ class ApiSystemsAssociationTests(ApiTest):
         )
         self.assertEqual(response.status_code, 200)
 
-        response_system_ids = json.loads(response.data)["system_ids"]
+        response_system_ids = json.loads(response.content)["system_ids"]
         self.assertNotIn(system_ids[0], response_system_ids)
 
     @mock.patch("system_baseline.views.v1.fetch_systems_with_profiles")
@@ -170,7 +170,7 @@ class ApiSystemsAssociationTests(ApiTest):
 
         response = self.client.get("api/system-baseline/v1/baselines", headers=fixtures.AUTH_HEADER)
         self.assertEqual(response.status_code, 200)
-        result = json.loads(response.data)
+        result = json.loads(response.content)
         baseline_id = [b["id"] for b in result["data"]][0]
 
         response = self.client.post(
@@ -180,7 +180,7 @@ class ApiSystemsAssociationTests(ApiTest):
         )
         self.assertEqual(response.status_code, 200)
 
-        response_system_ids = json.loads(response.data)["system_ids"]
+        response_system_ids = json.loads(response.content)["system_ids"]
         self.assertEqual(set(system_ids), set(response_system_ids).intersection(system_ids))
 
         for system_id in system_ids:
@@ -204,7 +204,7 @@ class ApiSystemsAssociationTests(ApiTest):
         ]
         response = self.client.get("api/system-baseline/v1/baselines", headers=fixtures.AUTH_HEADER)
         self.assertEqual(response.status_code, 200)
-        result = json.loads(response.data)
+        result = json.loads(response.content)
         baseline_id = [b["id"] for b in result["data"]][0]
 
         response = self.client.post(
@@ -230,7 +230,7 @@ class ApiSystemsAssociationTests(ApiTest):
         )
         self.assertEqual(response.status_code, 200)
 
-        response_system_ids = json.loads(response.data)["system_ids"]
+        response_system_ids = json.loads(response.content)["system_ids"]
 
         # deleted systems
         for system_id in system_ids_to_delete:
@@ -255,7 +255,7 @@ class ApiSystemsAssociationTests(ApiTest):
         ]
         response = self.client.get("api/system-baseline/v1/baselines", headers=fixtures.AUTH_HEADER)
         self.assertEqual(response.status_code, 200)
-        result = json.loads(response.data)
+        result = json.loads(response.content)
         baseline_id = [b["id"] for b in result["data"]][0]
 
         response = self.client.post(
@@ -282,7 +282,7 @@ class ApiSystemsAssociationTests(ApiTest):
         )
         self.assertEqual(response.status_code, 200)
 
-        response_system_ids = json.loads(response.data)["system_ids"]
+        response_system_ids = json.loads(response.content)["system_ids"]
 
         # deleted systems
         for system_id in system_ids_to_delete:
@@ -312,7 +312,7 @@ class InternalApiBaselinesTests(ApiTest):
 
         response = self.client.get("api/system-baseline/v1/baselines", headers=fixtures.AUTH_HEADER)
         self.assertEqual(response.status_code, 200)
-        result = json.loads(response.data)
+        result = json.loads(response.content)
         self.baseline_ids = [b["id"] for b in result["data"]]
         self.assertEqual(len(self.baseline_ids), 3)
 
@@ -321,7 +321,7 @@ class InternalApiBaselinesTests(ApiTest):
         super(InternalApiBaselinesTests, self).tearDown()
         mock_fetch_systems.return_value = [fixtures.SYSTEM_WITH_PROFILE]
         response = self.client.get("api/system-baseline/v1/baselines", headers=fixtures.AUTH_HEADER)
-        data = json.loads(response.data)["data"]
+        data = json.loads(response.content)["data"]
         for baseline in data:
             # get systems for baseline
             response = self.client.get(
@@ -330,7 +330,7 @@ class InternalApiBaselinesTests(ApiTest):
             )
             self.assertEqual(response.status_code, 200)
 
-            system_ids = json.loads(response.data)
+            system_ids = json.loads(response.content)
 
             # delete systems
             response = self.client.post(
@@ -359,7 +359,7 @@ class InternalApiBaselinesTests(ApiTest):
         )
         self.assertEqual(response.status_code, 200)
 
-        response_baseline_ids = json.loads(response.data)
+        response_baseline_ids = json.loads(response.content)
         self.assertEqual(len(response_baseline_ids), 0)
 
     @mock.patch("system_baseline.views.v1.fetch_systems_with_profiles")
@@ -383,7 +383,7 @@ class InternalApiBaselinesTests(ApiTest):
         )
         self.assertEqual(response.status_code, 200)
 
-        response_baseline_ids = json.loads(response.data)
+        response_baseline_ids = json.loads(response.content)
         self.assertEqual(len(response_baseline_ids), len(baseline_ids))
 
     @mock.patch("system_baseline.views.v1.fetch_systems_with_profiles")
@@ -407,7 +407,7 @@ class InternalApiBaselinesTests(ApiTest):
         )
         self.assertEqual(response.status_code, 200)
 
-        response_baseline_ids = json.loads(response.data)
+        response_baseline_ids = json.loads(response.content)
         self.assertEqual(len(response_baseline_ids), len(baseline_ids))
 
 
@@ -428,7 +428,7 @@ class ApiMappedSystemPatchTests(ApiTest):
 
         response = self.client.get("api/system-baseline/v1/baselines", headers=fixtures.AUTH_HEADER)
         self.assertEqual(response.status_code, 200)
-        result = json.loads(response.data)
+        result = json.loads(response.content)
         self.baseline_ids = [b["id"] for b in result["data"]]
 
         # create a mapped system associated with these baselines
@@ -444,7 +444,7 @@ class ApiMappedSystemPatchTests(ApiTest):
         super(ApiMappedSystemPatchTests, self).tearDown()
         mock_fetch_systems.return_value = [fixtures.a_system_with_profile(self.system_id)]
         response = self.client.get("api/system-baseline/v1/baselines", headers=fixtures.AUTH_HEADER)
-        data = json.loads(response.data)["data"]
+        data = json.loads(response.content)["data"]
         for baseline in data:
             # get systems for baseline
             response = self.client.get(
@@ -453,7 +453,7 @@ class ApiMappedSystemPatchTests(ApiTest):
             )
             self.assertEqual(response.status_code, 200)
 
-            system_ids = json.loads(response.data)
+            system_ids = json.loads(response.content)
 
             # delete systems
             response = self.client.post(
